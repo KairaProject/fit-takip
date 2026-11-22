@@ -1,1 +1,239 @@
 
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#101827">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Fit Takip</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101827;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,Arial,sans-serif;padding-bottom:85px}
+header{padding:25px 18px 15px;background:#172337}
+h1{font-size:25px;margin:0}h2{font-size:19px;margin:0 0 12px}
+small,.muted{color:#9caec3}
+main{padding:15px;max-width:650px;margin:auto}
+.card{background:#1d2b40;border:1px solid #314158;border-radius:17px;padding:17px;margin-bottom:13px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.btn{background:#30415b;color:white;border:0;border-radius:10px;padding:11px;cursor:pointer}
+.active,.green{background:#20b981;color:#081b15}
+input,select,textarea{background:#111e30;border:1px solid #40516b;color:white;border-radius:9px;padding:10px;max-width:100%;font-size:16px}
+input[type=checkbox]{width:20px;height:20px;accent-color:#20b981}
+input[type=number]{width:75px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#172337;display:flex;justify-content:space-around;padding:12px 4px max(12px,env(safe-area-inset-bottom));border-top:1px solid #35445b}
+nav button{border:0;background:none;color:#aabbd0;font-size:12px;padding:6px;cursor:pointer}
+nav button.active{color:#38e3a5;background:none}
+.exercise{padding:14px 0;border-bottom:1px solid #35445b}
+.exercise:last-child{border:0}
+.setrow{display:grid;grid-template-columns:42px 1fr 1fr 45px;align-items:center;gap:8px;margin-top:9px}
+.setrow input[type=number]{width:100%;min-width:0}
+.pill{background:#30415b;border-radius:8px;padding:5px 8px;font-size:12px}
+.bar{height:8px;background:#35445b;border-radius:10px;overflow:hidden;margin-top:9px}
+.fill{height:100%;background:#20b981}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.metric{background:#142136;padding:14px;border-radius:12px}
+.metric strong{font-size:24px;display:block;margin-top:7px}
+label.check{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #35445b}
+textarea{width:100%;min-height:95px}
+.note{font-size:12px;line-height:1.5;color:#aabbd0}
+</style>
+</head>
+<body>
+<header>
+<h1>💪 FIT TAKİP</h1>
+<small>Antrenman • Beslenme • Gelişim</small>
+</header>
+<main id="app"></main>
+<nav>
+<button onclick="tab='home';render()">🏠<br>Bugün</button>
+<button onclick="tab='train';render()">🏋️<br>Spor</button>
+<button onclick="tab='food';render()">🥗<br>Diyet</button>
+<button onclick="tab='progress';render()">📈<br>Gelişim</button>
+<button onclick="tab='backup';render()">⚙️<br>Yedek</button>
+</nav>
+<script>
+const program=[
+{day:"Pazartesi",name:"Göğüs · Omuz · Triceps",ex:[
+["Plate Loaded Chest Press",2,"5–6","RIR 1"],
+["Smith Machine Low Incline Press",2,"5–6","RIR 1"],
+["Chest Fly Machine",1,"6–8","Failure"],
+["Shoulder Press Machine",2,"5–6","RIR 1"],
+["Lateral Raise",3,"8–10","Failure"],
+["Triceps Pushdown",2,"6–8","Failure"],
+["Overhead Rope Extension",2,"8–10","Failure"]]},
+{day:"Salı",name:"Sırt · Biceps",ex:[
+["Lat Pulldown",2,"6–8","RIR 1 → Failure"],
+["Plate Loaded Wide Grip Row",3,"6–8","RIR 1 → Failure"],
+["Cable Row",1,"8–10","Failure"],
+["Dumbbell Curl",2,"6–8","Failure"],
+["Cable Curl",2,"6–8","Failure"],
+["Hammer Curl / Reverse Barbell Curl",2,"8–10","Failure (SS)"]]},
+{day:"Çarşamba",name:"Bacak",ex:[
+["Leg Press",2,"6–8","RIR 1"],
+["Smith Machine Squat",2,"6–8","RIR 1"],
+["Leg Extension",2,"8–10","Failure"],
+["Seated Leg Curl",3,"8–10","RIR 1"]]},
+{day:"Cuma",name:"Omuz · Göğüs · Triceps",ex:[
+["Shoulder Press Machine",2,"5–6","RIR 1"],
+["Lateral Raise",3,"8–10","Failure"],
+["Smith Machine Low Incline Press",2,"5–6","RIR 1"],
+["Chest Fly Machine",2,"6–8","Failure"],
+["Cable Rear Delt Fly",2,"8–10","Failure"],
+["Triceps Pushdown",2,"6–8","Failure"],
+["Overhead Rope Extension",2,"8–10","Failure"]]},
+{day:"Cumartesi",name:"Sırt · Kol · Bacak",ex:[
+["Plate Loaded Wide Grip Row",3,"6–8","RIR 1 → Failure"],
+["Close Grip Lat Pulldown",3,"6–8","RIR 1 → Failure"],
+["Cable Curl",2,"6–8","Failure"],
+["Hammer Curl / Reverse Barbell Curl",2,"8–10","Failure (SS)"],
+["Leg Press",2,"6–8","RIR 1"],
+["Leg Extension",2,"6–8","Failure"],
+["Seated Leg Curl",1,"8–10","Failure"]]}
+];
+const meals=[
+["Pazartesi","Tavuk, sebze ve yoğurt"],
+["Salı","Mercimek, süzme yoğurt ve lor / yumurta"],
+["Çarşamba","Menemen, lor ve yoğurt"],
+["Perşembe","Yağsız köfte, sebze ve yoğurt"],
+["Cuma","Nohut, cacık ve lor / yumurta"],
+["Cumartesi","Tavuk, sebze ve yoğurt"],
+["Pazar","Sebzeli yumurta, lor ve yoğurt"]
+];
+const storageKey="fitTakipPhoneV1";
+let data={sets:{},habits:{},water:{},weights:[],notes:{}};
+try{
+const saved=JSON.parse(localStorage.getItem(storageKey));
+if(saved&&typeof saved==="object"){
+data={...data,...saved};
+}
+}catch(e){}
+let tab="home";
+let selected=0;
+function dateToday(){
+const d=new Date();
+return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+}
+let date=dateToday();
+function save(){
+try{localStorage.setItem(storageKey,JSON.stringify(data))}
+catch(e){alert("Kayıt yapılamadı. Yedek almayı dene.")}
+}
+function safe(s){
+return String(s??"").replace(/[&<>"']/g,c=>({
+"&":"&amp;","<":"&lt;",">":"&gt;",
+'"':"&quot;","'":"&#39;"
+}[c]));
+}
+function setKey(i,j){return date+"|"+selected+"|"+i+"|"+j}
+function habitKey(k){return date+"|"+k}
+function setField(k,field,value){
+if(!data.sets[k])data.sets[k]={};
+data.sets[k][field]=value;
+save();
+if(field==="done")render();
+}
+function habit(k,value){
+data.habits[habitKey(k)]=value;
+save();
+}
+function card(x){return '<div class="card">'+x+'</div>'}
+function render(){
+document.querySelectorAll("nav button").forEach((b,i)=>{
+b.classList.toggle("active",["home","train","food","progress","backup"][i]===tab);
+});
+let html="";
+if(tab==="home"){
+const w=data.water[date]||0;
+html=card('<div class="row"><h2>Günlük takip</h2><input type="date" value="'+date+'" onchange="date=this.value;render()"></div>'+
+'<div class="grid"><div class="metric"><small>Kalori planı</small><strong>~1900</strong></div><div class="metric"><small>Haftalık spor</small><strong>5 gün</strong></div></div>'+
+'<h3>Bugünün hedefleri</h3>'+
+[["meal1","1. öğün"],["meal2","2. öğün"],["whey","Protein desteği"],["walk","Yürüyüş"],["sleep","Uyku"]].map(([k,v])=>
+'<label class="check">'+v+'<input type="checkbox" '+(data.habits[habitKey(k)]?"checked":"")+' onchange="habit(\''+k+'\',this.checked)"></label>').join("")+
+'<h3>💧 Su takibi</h3><div class="row"><button class="btn" onclick="changeWater(-1)">−</button><strong>'+(w*0.25).toFixed(2)+' litre</strong><button class="btn green" onclick="changeWater(1)">+</button></div><p class="note">Her dokunuş 250 ml. Su ihtiyacı kişiye göre değişir.</p>');
+}
+if(tab==="train"){
+const w=program[selected];
+let done=0,total=0;
+w.ex.forEach((e,i)=>{for(let j=0;j<e[1];j++){
+total++;if(data.sets[setKey(i,j)]?.done)done++;
+}});
+html=card('<h2>Güray’s Hypertrophy Max</h2><select style="width:100%" onchange="selected=Number(this.value);render()">'+program.map((p,i)=>
+'<option value="'+i+'" '+(selected===i?"selected":"")+'>'+p.day+' — '+p.name+'</option>').join("")+'</select>'+
+'<p>'+done+' / '+total+' set tamamlandı</p><div class="bar"><div class="fill" style="width:'+(100*done/total)+'%"></div></div>'+
+w.ex.map((e,i)=>'<div class="exercise"><div class="row"><strong>'+safe(e[0])+'</strong><span class="pill">'+e[1]+' × '+e[2]+'</span></div><small>'+safe(e[3])+'</small>'+
+'<div class="setrow"><small>Set</small><small>KG</small><small>Tekrar</small><small>✓</small></div>'+
+Array.from({length:e[1]},(_,j)=>{
+const k=setKey(i,j),v=data.sets[k]||{};
+return '<div class="setrow"><small>'+(j+1)+'.</small>'+
+'<input type="number" min="0" step="0.5" placeholder="kg" value="'+safe(v.kg||"")+'" onchange="setField(\''+k+'\',\'kg\',this.value)">'+
+'<input type="number" min="0" placeholder="tekrar" value="'+safe(v.reps||"")+'" onchange="setField(\''+k+'\',\'reps\',this.value)">'+
+'<input type="checkbox" '+(v.done?"checked":"")+' onchange="setField(\''+k+'\',\'done\',this.checked)"></div>';
+}).join("")+'</div>').join("")+
+'<p class="note">Program notu: İki antrenmanın sonunda 3×10 Cable Crunch ve 3×10 Standing Calf Raise. Failure = teknik tükeniş. Yeni başlıyorsan yoğunluğu antrenörünle uyarlaman iyi olur.</p>');
+}
+if(tab==="food"){
+html=card('<h2>🥗 Güncel beslenme</h2><p class="note">İki ana öğün; haftada 2–3 gün tavuk/et. Diğer günler yumurta, lor, yoğurt ve bakliyat.</p>'+
+'<h3>1. öğün</h3><p>3 yumurta, 150 g yumurta beyazı, 150 g az yağlı lor, yeşillik ve ölçülü zeytinyağı.</p>'+
+'<label class="check">Tamamlandı <input type="checkbox" '+(data.habits[habitKey("meal1")]?"checked":"")+' onchange="habit(\'meal1\',this.checked)"></label>'+
+'<h3>2. öğün</h3><p>Günün protein kaynağı, bol sebze ve yoğurt. İhtiyaca göre ölçülü pirinç, patates veya bakliyat.</p>'+
+'<label class="check">Tamamlandı <input type="checkbox" '+(data.habits[habitKey("meal2")]?"checked":"")+' onchange="habit(\'meal2\',this.checked)"></label>'+
+'<h3>Protein desteği</h3><p>Günlük protein eksikse 1 ölçek whey.</p>'+
+'<label class="check">Tamamlandı <input type="checkbox" '+(data.habits[habitKey("whey")]?"checked":"")+' onchange="habit(\'whey\',this.checked)"></label>'+
+'<p class="note">Yaklaşık 1900 kcal başlangıç hedefidir; bu öğün şablonu tek başına hedefe ulaşıldığını garanti etmez. Porsiyonlar hesaplanmalıdır.</p>');
+html+=card('<h2>Haftalık yemek rotasyonu</h2>'+
+meals.map(([day,meal])=>'<p><strong>'+day+'</strong><br><small>'+meal+'</small></p>').join(""));
+}
+if(tab==="progress"){
+html=card('<h2>📈 Kilo takibi</h2>'+
+'<div class="grid"><label><small>Kilo (kg)</small><br><input id="weight" type="number" min="1" step="0.1" style="width:100%" placeholder="124"></label>'+
+'<label><small>Bel (cm)</small><br><input id="waist" type="number" min="1" step="0.1" style="width:100%"></label></div>'+
+'<button class="btn green" style="width:100%;margin-top:15px" onclick="addWeight()">Ölçümü kaydet</button>'+
+'<h3>Ölçüm geçmişi</h3>'+
+(data.weights.length?data.weights.slice().reverse().map(x=>
+'<p class="row"><small>'+safe(x.date)+'</small><span>'+safe(x.kg)+' kg · '+safe(x.waist||"—")+' cm</span></p>').join(""):'<p class="muted">Henüz kayıt yok.</p>'));
+html+=card('<h2>Günlük not</h2><textarea id="notes" placeholder="Antrenman, enerji, açlık, uyku..." oninput="data.notes[date]=this.value;save()">'+safe(data.notes[date]||"")+'</textarea>');
+}
+if(tab==="backup"){
+html=card('<h2>⚙️ Veri yedekleme</h2><p>Verilerin bu iPhone üzerinde saklanır. Safari veya uygulama verileri silinirse kayıtlar kaybolabilir.</p>'+
+'<button class="btn green" style="width:100%" onclick="exportData()">⬇️ Yedeği indir</button>'+
+'<p>Yedeği geri yükle:</p><input type="file" accept=".json,application/json" style="width:100%" onchange="importData(this)">'+
+'<p class="note">Bu uygulama hesap veya bulut senkronizasyonu kullanmaz. Özel verilerini GitHub deposuna yükleme.</p>');
+}
+document.getElementById("app").innerHTML=html;
+}
+function changeWater(n){
+data.water[date]=Math.max(0,(data.water[date]||0)+n);
+save();render();
+}
+function addWeight(){
+const kg=document.getElementById("weight").value;
+const waist=document.getElementById("waist").value;
+if(!Number.isFinite(Number(kg))||Number(kg)<=0){alert("Geçerli kilo gir.");return;}
+data.weights.push({date,kg,waist});
+save();render();
+}
+function exportData(){
+const blob=new Blob([JSON.stringify({app:"FitTakip",data},null,2)],{type:"application/json"});
+const url=URL.createObjectURL(blob);
+const a=document.createElement("a");
+a.href=url;a.download="fit-takip-yedek.json";
+document.body.appendChild(a);a.click();a.remove();
+setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+async function importData(el){
+const file=el.files[0];if(!file)return;
+try{
+const obj=JSON.parse(await file.text());
+if(obj.app!=="FitTakip"||!obj.data||!Array.isArray(obj.data.weights))throw Error("Geçersiz dosya");
+if(confirm("Mevcut kayıtlar yedekle değiştirilsin mi?")){
+data=obj.data;save();render();
+}
+}catch(e){alert("Yedek okunamadı: "+e.message);}
+}
+render();
+</script>
+</body>
+</html>
+
